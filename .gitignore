@@ -1,0 +1,12 @@
+﻿.env
+*.key
+SECRET.md
+data/*.db
+__pycache__/
+*.pyc
+*.pyo
+.vscode/
+.idea/
+*.egg-info/
+dist/
+build/
