@@ -6,6 +6,76 @@ import jieba
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import os
+import streamlit as st
+import sqlite3
+import pandas as pd
+from datetime import datetime
+import jieba
+import os
+
+# 简洁白色主题
+st.markdown("""
+<style>
+    /* 白色背景 */
+    .stApp {
+        background-color: #f8f9fa;
+    }
+    
+    /* 标题 */
+    h1 {
+        color: #1a1a2e !important;
+        text-align: center;
+        font-family: 'Microsoft YaHei', sans-serif;
+        font-size: 2.5rem !important;
+        padding: 20px 0;
+    }
+    
+    /* 子标题 */
+    h2 {
+        color: #2d3748 !important;
+        border-left: 4px solid #667eea;
+        padding-left: 15px;
+        margin: 30px 0 20px 0;
+    }
+    
+    /* 指标卡片 - 蓝色 */
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* 指标数字 */
+    [data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-size: 2.5rem !important;
+        font-weight: bold;
+    }
+    
+    /* 指标标签 */
+    [data-testid="stMetricLabel"] {
+        color: #ffffff !important;
+        opacity: 0.9;
+    }
+    
+    /* 成功数字 */
+    .positive { color: #10b981 !important; }
+    
+    /* 警告数字 */
+    .negative { color: #ef4444 !important; }
+    
+    /* 侧边栏 */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+    }
+    
+    /* 表格 */
+    .dataframe {
+        border: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 st.set_page_config(page_title="游戏社区氛围监控", page_icon="🎮", layout="wide")
 
