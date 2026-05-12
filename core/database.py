@@ -189,4 +189,4 @@ class Database:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (report.report_id, report.report_type, report.created_at,
                   report.title, report.content, report.summary,
-                  report.version, None))
+                  report.version, None) 
