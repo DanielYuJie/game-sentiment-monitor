@@ -55,8 +55,7 @@ class MiyousheCrawler(BaseCrawler):
                 self.seen_ids.add(post_id)
 
                 post = self._convert_to_postitem(item)
-                if keyword and keyword not in post.content:
-                    continue
+            
                 posts.append(post)
 
             last_id = data.get("data", {}).get("last_id", "")

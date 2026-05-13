@@ -12,7 +12,61 @@ import pandas as pd
 from datetime import datetime
 import jieba
 import os
+# 一键全流程按钮
+st.subheader("🎯 全流程一键运行")
 
+col1, col2 = st.columns(2)
+
+if col1.button("🚀 一键采集+分析"):
+    with st.spinner("全流程运行中，请等待..."):
+        try:
+            from crawlers.bilibili_crawler import BilibiliCrawler
+            from crawlers.miyoushe_crawler import MiyousheCrawler
+            from core.database import Database
+            from core.llm_client import LLMClient
+            from agents.analysis_agent import AnalysisAgent
+            
+            db = Database()
+            llm = LLMClient()
+            agent = AnalysisAgent(llm, db)
+            
+            all_count = 0
+            
+            # 1. 爬取米游社
+            st.write("📱 采集米游社数据...")
+            miyo = MiyousheCrawler()
+            miyo_posts = miyo.crawl(keyword="星穹铁道", limit=50)
+            db.insert_posts(miyo_posts)
+            st.write(f"  米游社: {len(miyo_posts)} 条")
+            all_count += len(miyo_posts)
+            
+            # 2. 爬取B站
+            st.write("🎬 采集B站数据...")
+            bili = BilibiliCrawler()
+            bv_list = ['BV16p9UBgEhT', 'BV1tphVeWE2y', 'BV1gYd3BdENv']
+            bili_posts = []
+            for bv in bv_list:
+                posts = bili.get_comments(bv, max_pages=5)
+                bili_posts.extend(posts)
+            db.insert_posts(bili_posts)
+            st.write(f"  B站: {len(bili_posts)} 条")
+            all_count += len(bili_posts)
+            
+            # 3. 情感分析
+            st.write("🧠 情感分析...")
+            result = agent.run(platform='miyoushe', limit=200)
+            result2 = agent.run(platform='bilibili', limit=200)
+            
+            stats = result.get('result', {}).get('stats', {})
+            stats2 = result2.get('result', {}).get('stats', {})
+            
+            st.success(f"✅ 全流程完成！共采集 {all_count} 条，情感分析完成")
+            st.balloons()
+        except Exception as e:
+            st.error(f"出错: {str(e)}")
+
+if col2.button("🔄 刷新页面"):
+    st.rerun()
 # 简洁白色主题
 st.markdown("""
 <style>
@@ -109,6 +163,43 @@ with col2:
 negative = sentiments[sentiments['sentiment'] == 'negative']['count'].sum() if 'negative' in sentiments['sentiment'].values else 0
 with col3:
     st.metric("😞 负面", negative)
+
+# ========== 多平台对比 ==========
+st.subheader("多平台对比")
+
+# 获取各平台数据
+platform_stats = pd.read_sql("""
+    SELECT p.platform, sr.sentiment, COUNT(*) as count
+    FROM posts p
+    JOIN sentiment_results sr ON p.post_id = sr.post_id
+    GROUP BY p.platform, sr.sentiment
+""", conn)
+
+if not platform_stats.empty:
+    # 转换为透视表
+    platform_pivot = platform_stats.pivot_table(
+        index='platform', 
+        columns='sentiment', 
+        values='count', 
+        fill_value=0
+    )
+    
+    # 显示对比柱状图
+    st.bar_chart(platform_pivot)
+    
+    # 平台帖子数统计
+    platform_counts = pd.read_sql("""
+        SELECT p.platform, COUNT(*) as total,
+               SUM(CASE WHEN sr.sentiment = 'positive' THEN 1 ELSE 0 END) as positive,
+               SUM(CASE WHEN sr.sentiment = 'negative' THEN 1 ELSE 0 END) as negative
+        FROM posts p
+        LEFT JOIN sentiment_results sr ON p.post_id = sr.post_id
+        GROUP BY p.platform
+    """, conn)
+    
+    st.dataframe(platform_counts, use_container_width=True)
+else:
+    st.info("暂无平台对比数据")
 
 # ========== 情感分布图 ==========
 st.subheader("📊 情感分布")
